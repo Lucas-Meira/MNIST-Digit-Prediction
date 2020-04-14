@@ -3,10 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 import os
+import time
 
-mnist = tf.keras.datasets.mnist
-(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+np.random.seed(int(time.time()))
 
+
+
+#Load images from the MNIST Dataset
+(train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
+# Create labels for the digits, 0 - 9
 class_names = []
 for i in range(10):
     class_names.append(i)
@@ -14,6 +19,7 @@ for i in range(10):
 print('Training data:', train_images.shape, train_labels.shape)
 print('Test data:', test_images.shape, test_labels.shape)
 
+# Functions for displaying training and test images
 def show_training_image(index):
     img_label = str(train_labels[index])
     plt.figure()
@@ -30,25 +36,31 @@ def show_test_image(index):
     plt.colorbar()
     plt.show()
 
-    # Normalize data
+# Reshape images into (1,28,28,1) format
 train_images = train_images.reshape((train_images.shape[0], 28, 28, 1)).astype('float32')
 test_images = test_images.reshape((test_images.shape[0], 28, 28, 1)).astype('float32')
 
+# Mnist dataset contains images with pixel values from 0 to 255
+# We normalize it to a range from 0 to 1
 train_images = train_images / 255.0
 test_images = test_images / 255.0
 '''
+# Model without convolutional layer
 model = tf.keras.models.Sequential() 
-
 model.add(tf.keras.layers.Flatten(input_shape=(28,28),name = 'flatten')) # Add the first layer. Flatten is not a layer of neurons but it flatens the image tensor [28,28] into a pixel vector [784] 
 model.add(tf.keras.layers.Dense(256,activation='relu',name='dense-128-relu')) # Add a dense layer. 128 respects the input size >= # neurons >= size of output
 model.add(tf.keras.layers.Dense(10,activation='softmax',name='dense-10-softmax')) # Output layer with 10 neurons (10 images)
 '''
 
+"""
+  Create the Deep Neural Network. It is a sequential model. In this model, the output of one layer is
+ the input of the next layer.
+"""
 model = tf.keras.models.Sequential()
 model.add(tf.keras.layers.Conv2D(32, (5, 5), input_shape=(28, 28,1), activation='relu'))
 model.add(tf.keras.layers.MaxPooling2D())
-model.add(tf.keras.layers.Dropout(0.2))
-model.add(tf.keras.layers.Flatten())
+model.add(tf.keras.layers.Dropout(0.2)) # Add a dropout layer that randomly sets 20% of the neurons' outputs to 0
+model.add(tf.keras.layers.Flatten()) # Flatten the image from (28,28) pixels to an array of 784 pixels
 model.add(tf.keras.layers.Dense(128, activation='relu'))
 model.add(tf.keras.layers.Dense(10, activation='softmax'))
 
@@ -56,14 +68,18 @@ print('Input Shape: ', train_images.shape)
 print()
 print(model.summary())
 
+# Compile the model with ADAM optimizer and Sparse Categorical Crossentropy loss function
 model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-log_dir = "C:\\Users\\User\\OneDrive\\Documents\\Códigos\\Tensorflow\\logs\\fit\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+# Tensorboard configuration
+log_dir = os.path.join("logs","fit", datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+# Early stopping calback for stopping when test images loss stops decreasing after 4 epochs (Patience)
 #early_stopping_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=4)
 
+# Train model
 train_hist = model.fit(x=train_images, 
           y=train_labels, 
           epochs=5, 
@@ -89,8 +105,10 @@ def plot_loss(hist):
 plot_loss(train_hist)
 plot_acc(train_hist)
 
+# Predict all test images
 predictions = model.predict(test_images)
 
+# Plot a test image with its prediction
 def plot_image(i, predictions_array, true_label, img):
   predictions_array, true_label, img = predictions_array, true_label[i], img[i]
   plt.grid(False)
@@ -110,6 +128,8 @@ def plot_image(i, predictions_array, true_label, img):
                                 class_names[true_label]),
                                 color=color)
 
+# Create a bar plot with the probabilities of being each digit
+
 def plot_value_array(i, predictions_array, true_label):
   predictions_array, true_label = predictions_array, true_label[i]
   plt.grid(False)
@@ -122,12 +142,11 @@ def plot_value_array(i, predictions_array, true_label):
   thisplot[predicted_label].set_color('red')
   thisplot[true_label].set_color('blue')
 
+# Plot the first X test images, their predicted labels, and the true labels.
+# Color correct predictions in blue and incorrect predictions in red.
 num_rows = 5
 num_cols = 3
 num_images = num_rows*num_cols
-
-import time
-np.random.seed(int(time.time()))
 
 pred_img_index = np.random.randint(0,len(test_images)-1,size=num_images)
 plt.figure(figsize=(2*2*num_cols, 2*num_rows))
@@ -139,6 +158,7 @@ for i in range(num_images):
 plt.tight_layout()
 plt.show()
 
+# Count the number of images the model has mistakenly predicted and get their indexes
 count = 0
 error_index = []
 for i in range(int(len(test_images))):
@@ -148,4 +168,4 @@ for i in range(int(len(test_images))):
 
 count
 
-model.save("C:\\Users\\User\\OneDrive\\Documents\\Códigos\\Tensorflow\\Digit_Recognition_Models.h5")
+model.save(os.path.join("Models","Digit_Recognition_Models_{}.h5".format(datetime.datetime.now().strftime("%H%M"))))
