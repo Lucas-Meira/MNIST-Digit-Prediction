@@ -7,8 +7,6 @@ import time
 
 np.random.seed(int(time.time()))
 
-
-
 #Load images from the MNIST Dataset
 (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
 # Create labels for the digits, 0 - 9
