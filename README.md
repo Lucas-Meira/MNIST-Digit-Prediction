@@ -117,5 +117,5 @@ The difference between the two hybrid models is in the number of training epochs
 
 # License
 
-Usage is provided under the [MIT License](http://http//opensource.org/licenses/mit-license.php). See LICENSE for the full details.
+Usage is provided under the [MIT License](http://opensource.org/licenses/mit-license.php). See LICENSE for the full details.
 
